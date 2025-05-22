@@ -162,18 +162,18 @@ if __name__ == "__main__":
                     "stumble entry south napkin fuel expect supply resemble scheme boat acoustic grace airport tower maid record sustain way grab lava dog fame liberty very"
     ]
     
-    BASE_PASSPHRASE = "doctor result uncle jealous quick cactus inherit emerge shell galaxy venue city leave amazing grit true series filter poem find world stamp energy dirt" 
+    BASE_PASSPHRASE = "february soul person cost child winner opera era faculty junk destroy tank economy rebel again expire train urban absent toast settle achieve smoke actor"
     DEST_ADDRESS = "MDFNWH6ZFJVHJDLBMNOUT35X4EEKQVJAO3ZDL4NL7VQJLC4PJOQFWAAAAAAKAWXUVERSM"
     
     # Initialize generator
     generator = XDRGenerator(
         base_passphrase=BASE_PASSPHRASE,
         dest_address=DEST_ADDRESS,
-        withdrawal_amount="2000"
+        withdrawal_amount="415"
     )
     
     # Generate XDR batch with 1 hour validity
     generator.generate_xdr_batch(
         channel_passphrases=CHANNEL_PASSPHRASES,
-        unlock_time=int(time.time()) + 600
+        unlock_time=int(time.time()) + 6000
     )
