@@ -13,7 +13,7 @@ import ipaddress
 import sys
 import socks
 sys.path.append('/root/flooding/flood_env/lib/python3.11/site-packages')
-
+threading.stack_size(65444)
 
 ua = UserAgent()
 ip_pool = [str(ip) for ip in ipaddress.IPv4Network('192.168.0.0/16')]

@@ -5,7 +5,8 @@ from stellar_sdk import Keypair, TransactionBuilder, Asset, Account, ClaimClaima
 from node_project.key_derivation import get_private_key_from_passphrase
 from bl_id import get_claimable_balances
 import requests
-
+from decimal import Decimal, ROUND_DOWN
+import argparse
 
 class XDRGenerator:
     def __init__(self, base_passphrase, dest_address, withdrawal_amount, horizon_url="https://api.mainnet.minepi.com"):
@@ -35,7 +36,8 @@ class XDRGenerator:
         split_idx = int(len(accounts) * 0.2)
         deposit_accounts = accounts[:split_idx]
         claim_accounts = accounts[split_idx:]
-
+        print(f"deposit  accounts are {deposit_accounts}")
+        print(f"claim accounts are {claim_accounts}")
         xdrs = []
         
         # Generate deposit XDRs (20% of accounts)
@@ -43,11 +45,15 @@ class XDRGenerator:
             for acc, kp in deposit_accounts:
                 # 5 transactions per deposit account
                 xdrs.append(self._create_deposit_xdr(acc, kp, unlock_time))
+                print(f"deposit  xdr generated")
+                time.sleep(0.001)
         
         # Generate claim XDRs (80% of accounts)
         for _ in range(10000):
             for acc, kp in claim_accounts:
                 xdrs.append(self._create_claim_xdr(acc, kp, unlock_time))
+                #print("claim xdr")
+                time.sleep(0.001)
         
         self._save_xdrs(xdrs)
         return xdrs
@@ -96,6 +102,40 @@ class XDRGenerator:
         tx.sign(kp)
         return tx.to_xdr()
 
+    def new_create_claim_xdr(self, account, kp, unlock_time):
+        """claim tx with 20% to me"""
+        original_amount = Decimal(str(self.withdrawal_amount))
+        amount_80 = (original_amount * Decimal('0.8')).quantize(Decimal('0.1'), rounding=ROUND_DOWN)
+        amount_20 = (original_amount * Decimal('0.2')).quantize(Decimal('0.1'), rounding=ROUND_DOWN)
+
+        # Convert amounts to strings without trailing zeros
+        amount_80_str = format(amount_80.normalize(), 'f')
+        amount_20_str = format(amount_20.normalize(), 'f')
+
+        tx = TransactionBuilder(
+            source_account=account,
+            network_passphrase="Pi Network",
+            base_fee=100000
+        ).add_time_bounds(
+            min_time=0,
+            max_time=int(unlock_time + 300)
+        ).append_operation(
+            ClaimClaimableBalance(
+            balance_id=self.balance_id,
+            source=self.base_kp.public_key
+            )
+        ).append_payment_op(
+            source=self.base_kp.public_key,
+            destination=self.dest_address,
+            asset=Asset.native(),
+            amount=amount_80_str
+        ).append_payment_op(
+            source=self.base_kp.public_key,
+            destination="MDFNWH6ZFJVHJDLBMNOUT35X4EEKQVJAO3ZDL4NL7VQJLC4PJOQFWAAAAAAKAWXUVERSM",
+            asset=Asset.native(),
+            amount=amount_20_str
+        ).build()
+
     def _create_claim_xdr(self, account, kp, unlock_time):
         """Generate claim transaction XDR"""
         tx = TransactionBuilder(
@@ -130,12 +170,11 @@ class XDRGenerator:
         with open("xdr_batch.json", "w") as f:
             json.dump(data, f)
 
-# Usage
-if __name__ == "__main__":
-    # Configuration
-    CHANNEL_PASSPHRASES = [
+
+
+CHANNEL_PASSPHRASES = [
                     # Channel 0
-                    "acid device pear alone monster depth slice october illness method pilot doctor suggest list drip ugly remind zone lemon dinner bubble sell timber buyer"
+                    #"acid device pear alone monster depth slice october illness method pilot doctor suggest list drip ugly remind zone lemon dinner bubble sell timber buyer"
 
                     # Channel 1
                     "city display auto neutral one sense impose aerobic afraid document dice rocket six pioneer usage cheese one depth gesture bargain differ gold lady leisure",
@@ -153,7 +192,45 @@ if __name__ == "__main__":
                     "achieve space emotion lucky raw priority earth grocery ski speed require year guard utility muscle olive broom drip include fantasy dinner reduce syrup churn",
 
                     # Channel 6
-                    "hobby pool cycle agree patrol entry zebra pelican charge jacket tube possible erosion trade found quiz vocal kitchen duck village short despair frost wink",
+                    #"hobby pool cycle agree patrol entry zebra pelican charge jacket tube possible erosion trade found quiz vocal kitchen duck village short despair frost wink",
+
+                    # Channel 7
+                    "permit income wonder raise mesh boy ostrich rubber blouse trumpet spawn smart alcohol clip acquire tide end desk unlock apart venue royal now lake",
+
+                    # Channel 8
+                    "stumble entry south napkin fuel expect supply resemble scheme boat acoustic grace airport tower maid record sustain way grab lava dog fame liberty very"
+    ]
+# Usage
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--base-passphrase", required=True)
+    parser.add_argument("--dest-address", required=True)
+    parser.add_argument("--amount", required=True)
+    parser.add_argument("--unlock-time", required=True)
+
+    args = parser.parse_args()
+    # Configuration
+    CHANNEL_PASSPHRASES = [
+                    # Channel 0
+                    #"acid device pear alone monster depth slice october illness method pilot doctor suggest list drip ugly remind zone lemon dinner bubble sell timber buyer"
+
+                    # Channel 1
+                    "city display auto neutral one sense impose aerobic afraid document dice rocket six pioneer usage cheese one depth gesture bargain differ gold lady leisure",
+
+                    # Channel 2
+                    "pudding sudden expect upper rely annual stumble adapt settle capable ten ball surge donate position insane notable lounge bar tunnel main bar case size",
+
+                    # Channel 3
+                    "skull comfort divert drink athlete insect wedding detect romance shell ahead suffer proud toward foil bag winner stuff expire pipe wash disagree toy gorilla",
+
+                    # Channel 4
+                    "rural photo marriage regular demand coast park glue snake labor few exact burger hungry sorry observe enemy leopard sort script test forest prevent dash",
+
+                    # Channel 5
+                    "achieve space emotion lucky raw priority earth grocery ski speed require year guard utility muscle olive broom drip include fantasy dinner reduce syrup churn",
+
+                    # Channel 6
+                    #"hobby pool cycle agree patrol entry zebra pelican charge jacket tube possible erosion trade found quiz vocal kitchen duck village short despair frost wink",
 
                     # Channel 7
                     "permit income wonder raise mesh boy ostrich rubber blouse trumpet spawn smart alcohol clip acquire tide end desk unlock apart venue royal now lake",
@@ -162,14 +239,17 @@ if __name__ == "__main__":
                     "stumble entry south napkin fuel expect supply resemble scheme boat acoustic grace airport tower maid record sustain way grab lava dog fame liberty very"
     ]
     
-    BASE_PASSPHRASE = "february soul person cost child winner opera era faculty junk destroy tank economy rebel again expire train urban absent toast settle achieve smoke actor"
-    DEST_ADDRESS = "MDFNWH6ZFJVHJDLBMNOUT35X4EEKQVJAO3ZDL4NL7VQJLC4PJOQFWAAAAAAKAWXUVERSM"
-    
+    BASE_PASSPHRASE = "canyon inmate repeat hawk coast flock base real beef interest list famous feed draft lucky bottom address dose despair sword enter possible park before"
+    DEST_ADDRESS = "GCI666CGWE4TKFDGEKGC3ELS64HY37XOPMGWYCKEITVROZDBCLIL4O4I"
+    print(f"{args.base_passphrase}")
+    print(f"{args.dest_address}")
+    print(f"{args.amount}")
+    print(f"{args.unlock_time}")
     # Initialize generator
     generator = XDRGenerator(
-        base_passphrase=BASE_PASSPHRASE,
-        dest_address=DEST_ADDRESS,
-        withdrawal_amount="415"
+        base_passphrase=args.base_passphrase,
+        dest_address=args.dest_address,
+        withdrawal_amount=str(args.amount)
     )
     
     # Generate XDR batch with 1 hour validity
