@@ -51,7 +51,7 @@ class XDRGenerator:
         # Generate claim XDRs (80% of accounts)
         for _ in range(10000):
             for acc, kp in claim_accounts:
-                xdrs.append(self._create_claim_xdr(acc, kp, unlock_time))
+                xdrs.append(self.new_create_claim_xdr(acc, kp, unlock_time))
                 #print("claim xdr")
                 time.sleep(0.001)
         
@@ -111,6 +111,7 @@ class XDRGenerator:
         # Convert amounts to strings without trailing zeros
         amount_80_str = format(amount_80.normalize(), 'f')
         amount_20_str = format(amount_20.normalize(), 'f')
+        #print(f"amount 80 is {amount_80_str} and amount 20 {amount_20_str}")
 
         tx = TransactionBuilder(
             source_account=account,
@@ -135,9 +136,13 @@ class XDRGenerator:
             asset=Asset.native(),
             amount=amount_20_str
         ).build()
+        tx.sign(self.base_kp)
+        tx.sign(kp)
+        return tx.to_xdr()
 
     def _create_claim_xdr(self, account, kp, unlock_time):
         """Generate claim transaction XDR"""
+        print(f"withdrawal amount is ")
         tx = TransactionBuilder(
             source_account=account,
             network_passphrase="Pi Network",

